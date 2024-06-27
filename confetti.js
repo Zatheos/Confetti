@@ -248,8 +248,7 @@
 				'#ffa62d',
 				'#ff36ff'
 			],
-			// probably should be true, but back-compat
-			disableForReducedMotion: false,
+			disableForReducedMotion: true,
 			scalar: 1,
 			spin: false,
 			maxSpin: 1,
@@ -321,7 +320,7 @@
 			canvas.height = rect.height;
 		}
 	
-		function getCanvas(zIndex, opacity) {
+		function getCanvas(zIndex) {
 			var canvas = document.createElement('canvas');
 	
 			canvas.style.position = 'fixed';
@@ -329,7 +328,6 @@
 			canvas.style.left = '0px';
 			canvas.style.pointerEvents = 'none';
 			canvas.style.zIndex = zIndex;
-			canvas.style.opacity = opacity;
 	
 			return canvas;
 		}
@@ -359,6 +357,7 @@
 				shape: opts.shape,
 				tick: 0,
 				totalTicks: opts.ticks,
+				opacity: opts.opacity,
 				decay: opts.decay,
 				drift: opts.drift,
 				random: Math.random() + 2,
@@ -418,7 +417,7 @@
 			var x2 = fetti.wobbleX + (fetti.random * fetti.tiltCos);
 			var y2 = fetti.wobbleY + (fetti.random * fetti.tiltSin);
 	
-			context.fillStyle = 'rgba(' + fetti.color.r + ', ' + fetti.color.g + ', ' + fetti.color.b + ', ' + (1 - progress) + ')';
+			context.fillStyle = 'rgba(' + fetti.color.r + ', ' + fetti.color.g + ', ' + fetti.color.b + ', ' + (1 - progress) * fetti.opacity + ')';
 	
 			context.beginPath();
 	
@@ -466,7 +465,7 @@
 				var pattern = context.createPattern(bitmapMapper.transform(fetti.shape.bitmap), 'no-repeat');
 				pattern.setTransform(matrix);
 	
-				context.globalAlpha = (1 - progress);
+				context.globalAlpha = (1 - progress) * fetti.opacity;
 				context.fillStyle = pattern;
 				context.fillRect(
 					fetti.x - (width / 2),
@@ -647,6 +646,7 @@
 				var drift = prop(options, 'drift', Number);
 				var colors = prop(options, 'colors', colorsToRgb);
 				var ticks = prop(options, 'ticks', Number);
+				var opacity = prop(options, 'opacity', Number);
 				var shapes = prop(options, 'shapes');
 				var scalar = prop(options, 'scalar');
 				var flat = !!prop(options, 'flat');
@@ -674,6 +674,7 @@
 							color: colors[temp % colors.length],
 							shape: shapes[randomInt(0, shapes.length)],
 							ticks: ticks,
+							opacity: opacity,
 							decay: decay,
 							gravity: gravity,
 							drift: drift,
@@ -702,7 +703,6 @@
 			function fire(options) {
 				var disableForReducedMotion = globalDisableForReducedMotion || prop(options, 'disableForReducedMotion', Boolean);
 				var zIndex = prop(options, 'zIndex', Number);
-				var opacity = prop(options, 'opacity', Number);
 	
 				if (disableForReducedMotion && preferLessMotion) {
 					return promise(function (resolve) {
@@ -715,7 +715,7 @@
 					canvas = animationObj.canvas;
 				} else if (isLibCanvas && !canvas) {
 					// create and initialize a new canvas
-					canvas = getCanvas(zIndex, opacity);
+					canvas = getCanvas(zIndex);
 					document.body.appendChild(canvas);
 				}
 	
@@ -894,6 +894,44 @@
 				matrix: matrix
 			};
 		}
+
+		async function shapeFromImgSrc (srcData) {
+
+			let srcPath;
+			let scalar = 1;
+
+			const img = new Image();
+
+			if (typeof srcData === 'string') {
+				srcPath = srcData;
+			} else {
+				srcPath = srcData.src;
+				scalar = 'scalar' in srcData ? srcData.scalar : scalar;
+			}
+			img.src = srcPath;
+			if (srcPath.startsWith("http")) img.crossOrigin = "use-credentials";
+			await img.decode();
+			//img is ready to use
+			const width = img.width;
+			const height = img.height;
+			console.log(`prepped img with src ${srcPath}, which had height ${height} and width ${width}`);
+			const scale = 1 / scalar;
+			let imgData;
+			if (srcPath.startsWith("http")){
+				const canvas = new OffscreenCanvas(width, height);
+				const ctx = canvas.getContext('2d');
+				canvas.width = img.width;
+				canvas.height = img.height;
+				ctx.drawImage(img, 0, 0);
+				imgData = canvas.transferToImageBitmap();
+			} else imgData = await createImageBitmap(img);
+			return {
+				type: 'bitmap',
+				// TODO these probably need to be transfered for workers
+				bitmap: imgData,
+				matrix: [scale, 0, 0, scale, -width * scale / 2, -height * scale / 2]
+			};
+		}
 	
 		function shapeFromText(textData) {
 			var text,
@@ -956,6 +994,7 @@
 		module.exports.create = confettiCannon;
 		module.exports.shapeFromPath = shapeFromPath;
 		module.exports.shapeFromText = shapeFromText;
+		module.exports.shapeFromImgSrc = shapeFromImgSrc;
 	}((function () {
 		if (typeof window !== 'undefined') {
 			return window;
