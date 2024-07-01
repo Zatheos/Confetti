@@ -234,6 +234,7 @@
 			gravity: 1,
 			drift: 0,
 			ticks: 200,
+			fadeInTicks: 0,
 			x: 0.5,
 			y: 0.5,
 			shapes: ['square', 'circle'],
@@ -357,6 +358,7 @@
 				shape: opts.shape,
 				tick: 0,
 				totalTicks: opts.ticks,
+				fadeInTicks: opts.fadeInTicks,
 				opacity: opts.opacity,
 				decay: opts.decay,
 				drift: opts.drift,
@@ -410,14 +412,15 @@
 				fetti.rot += fetti.angVel % 360; 
 			}
 
-			var progress = (fetti.tick++) / fetti.totalTicks;
+			fetti.tick++;
+			const progressOpacity = fetti.tick < fetti.fadeInTicks ? (fetti.tick / fetti.fadeInTicks) : 1-((fetti.tick- fetti.fadeInTicks) / fetti.totalTicks);
 	
 			var x1 = fetti.x + (fetti.random * fetti.tiltCos);
 			var y1 = fetti.y + (fetti.random * fetti.tiltSin);
 			var x2 = fetti.wobbleX + (fetti.random * fetti.tiltCos);
 			var y2 = fetti.wobbleY + (fetti.random * fetti.tiltSin);
 	
-			context.fillStyle = 'rgba(' + fetti.color.r + ', ' + fetti.color.g + ', ' + fetti.color.b + ', ' + (1 - progress) * fetti.opacity + ')';
+			context.fillStyle = 'rgba(' + fetti.color.r + ', ' + fetti.color.g + ', ' + fetti.color.b + ', ' + (progressOpacity) * fetti.opacity + ')';
 	
 			context.beginPath();
 	
@@ -465,7 +468,7 @@
 				var pattern = context.createPattern(bitmapMapper.transform(fetti.shape.bitmap), 'no-repeat');
 				pattern.setTransform(matrix);
 	
-				context.globalAlpha = (1 - progress) * fetti.opacity;
+				context.globalAlpha = progressOpacity * fetti.opacity;
 				context.fillStyle = pattern;
 				context.fillRect(
 					fetti.x - (width / 2),
@@ -555,7 +558,7 @@
 			context.closePath();
 			context.fill();
 	
-			return fetti.tick < fetti.totalTicks;
+			return fetti.tick < fetti.fadeInTicks + fetti.totalTicks;
 		}
 	
 		function animate(canvas, fettis, resizer, size, done) {
@@ -646,6 +649,7 @@
 				var drift = prop(options, 'drift', Number);
 				var colors = prop(options, 'colors', colorsToRgb);
 				var ticks = prop(options, 'ticks', Number);
+				var fadeInTicks = prop(options, 'fadeInTicks', Number);
 				var opacity = prop(options, 'opacity', Number);
 				var shapes = prop(options, 'shapes');
 				var scalar = prop(options, 'scalar');
@@ -674,6 +678,7 @@
 							color: colors[temp % colors.length],
 							shape: shapes[randomInt(0, shapes.length)],
 							ticks: ticks,
+							fadeInTicks: fadeInTicks,
 							opacity: opacity,
 							decay: decay,
 							gravity: gravity,
@@ -916,15 +921,7 @@
 			const height = img.height;
 			console.log(`prepped img with src ${srcPath}, which had height ${height} and width ${width}`);
 			const scale = 1 / scalar;
-			let imgData;
-			if (srcPath.startsWith("http")){
-				const canvas = new OffscreenCanvas(width, height);
-				const ctx = canvas.getContext('2d');
-				canvas.width = img.width;
-				canvas.height = img.height;
-				ctx.drawImage(img, 0, 0);
-				imgData = canvas.transferToImageBitmap();
-			} else imgData = await createImageBitmap(img);
+			const imgData = await createImageBitmap(img);
 			return {
 				type: 'bitmap',
 				// TODO these probably need to be transfered for workers

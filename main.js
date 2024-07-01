@@ -131,7 +131,7 @@ const longConfetti = async () => {
 
 const spookyEyes = async () => {
 
-	const eyes = await confetti.shapeFromImgSrc({src: 'eyes2.png', scalar: 1 });
+	const eyes = await confetti.shapeFromImgSrc({src: 'eyes1.png', scalar: 1 });
 	const duration = 12000 * 1000; //12000 seconds = 200 mins = 3hrs 20
 	const end = Date.now() + duration;
 
@@ -148,8 +148,9 @@ const spookyEyes = async () => {
 			minScale: 0.03,
 			maxScale: 0.15,
 			ticks: 130,
+			fadeInTicks: 130,
 			// colors: ['eee'],
-			opacity: 0.3,
+			opacity: 0.2,
 			startVelocity: 0,
 			gravity: 0,
 			drift: 0,
@@ -158,12 +159,94 @@ const spookyEyes = async () => {
 
 		// keep going until we are out of time
 		if (Date.now() < end) {
-			setTimeout(frame, 200);
+			setTimeout(frame, 2800);
+			// requestAnimationFrame(frame);
+		}
+
+	}());
+	(function big() {
+		const opts = {
+			particleCount: 1,
+			origin: { x: 0.5, y: 0.5 },
+			flat: true,
+			shapes: [eyes],
+			scalar: 1,
+			ticks: 100,
+			fadeInTicks: 100,
+			opacity: 0.1,
+			startVelocity: 0,
+			gravity: 0,
+			drift: 0,
+		}
+		confetti(opts);
+
+		// keep going until we are out of time
+		if (Date.now() < end) {
+			setTimeout(big, 30000);
 			// requestAnimationFrame(frame);
 		}
 
 	}());
 }
 
-window.onload = spookyEyes;
+
+
+const clocktowers = async () => {
+
+	const arr = [
+		await confetti.shapeFromImgSrc({src: 'icons/imp.png', scalar: 1 }),
+		await confetti.shapeFromImgSrc({src: 'icons/chef.png', scalar: 1 }),
+		await confetti.shapeFromImgSrc({src: 'icons/baron.png', scalar: 1 }),
+		await confetti.shapeFromImgSrc({src: 'icons/butler.png', scalar: 1 }),
+		await confetti.shapeFromImgSrc({src: 'icons/drunk.png', scalar: 1 }),
+		await confetti.shapeFromImgSrc({src: 'icons/poisoner.png', scalar: 1 }),
+		await confetti.shapeFromImgSrc({src: 'icons/empath.png', scalar: 1 }),
+		await confetti.shapeFromImgSrc({src: 'icons/damsel.png', scalar: 1 }),
+		await confetti.shapeFromImgSrc({src: 'icons/harlot.png', scalar: 1 }),
+		await confetti.shapeFromImgSrc({src: 'icons/innkeeper.png', scalar: 1 }),
+		await confetti.shapeFromImgSrc({src: 'icons/lleech.png', scalar: 1 }),
+	]
+	
+	const duration = 12000 * 1000; //12000 seconds = 200 mins = 3hrs 20
+	const end = Date.now() + duration;
+
+	(function frame() {
+		const opts = {
+			particleCount: 10,
+			// angle: 330,
+			// spread: 55,
+			origin: { x: Math.random(), y: Math.random() },
+			zIndex:0,
+			flat: true,
+			spin: true,
+			maxSpin: 1,
+			minSpin: -1,
+			shapes: arr,
+			scalar: 0.1,
+			minScale: 0.03,
+			maxScale: 0.15,
+			ticks: 400,
+			fadeInTicks: 130,
+			// colors: ['eee'],
+			opacity: 0.8,
+			startVelocity: 0,
+			gravity: 0,
+			drift: 0,
+		}
+		confetti(opts);
+
+		// keep going until we are out of time
+		if (Date.now() < end) {
+			setTimeout(frame, 100);
+			// requestAnimationFrame(frame);
+		}
+
+	}());
+}
+
+
+
+
+
+window.onload = clocktowers;
 // window.onload = longConfetti;
