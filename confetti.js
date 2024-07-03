@@ -901,12 +901,8 @@
 		}
 
 		async function shapeFromImgSrc (srcData) {
-
-			let srcPath;
-			let scalar = 1;
-
+			let srcPath, scalar = 1;
 			const img = new Image();
-
 			if (typeof srcData === 'string') {
 				srcPath = srcData;
 			} else {
@@ -914,19 +910,27 @@
 				scalar = 'scalar' in srcData ? srcData.scalar : scalar;
 			}
 			img.src = srcPath;
-			if (srcPath.startsWith("http")) img.crossOrigin = "use-credentials";
+			
 			await img.decode();
-			//img is ready to use
+
 			const width = img.width;
 			const height = img.height;
-			console.log(`prepped img with src ${srcPath}, which had height ${height} and width ${width}`);
+
+			//make the img at most 10pxls on a side.
+			const biggest = Math.max(width, height)
+			const divisor = biggest / (10 * scalar);
+			const endWidth = width/divisor;
+			const endHeight = height/divisor;
 			const scale = 1 / scalar;
-			const imgData = await createImageBitmap(img);
+			const padding = 2;			
+			const canvas = new OffscreenCanvas(endWidth + 2*padding, endHeight + 2*padding);
+			const ctx = canvas.getContext('2d');
+			ctx.drawImage(img, 0, 0, width, height, padding, padding, endWidth, endHeight);
 			return {
 				type: 'bitmap',
 				// TODO these probably need to be transfered for workers
-				bitmap: imgData,
-				matrix: [scale, 0, 0, scale, -width * scale / 2, -height * scale / 2]
+				bitmap: canvas.transferToImageBitmap(),
+				matrix: [scale, 0, 0, scale, -endWidth * scale / 2, -endHeight * scale / 2]
 			};
 		}
 	
